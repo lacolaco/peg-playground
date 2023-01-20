@@ -1,0 +1,49 @@
+package main
+
+type Parser Peg {
+    Document *Document
+    currentSection *Section
+}
+
+start <- { 
+    fmt.Println("Document")
+    p.Document = &Document{
+        Sections: []*Section{},
+    }
+    p.currentSection = nil
+} Document EOF
+
+Document <- Line*
+
+Line <- SectionHeadLine / TextLine / EmptyLine
+
+SectionHeadLine <- 
+    HeaderOpen
+    <(!EOL !HeaderClose .)+> { 
+        fmt.Println("Section=" + text) 
+        p.currentSection = &Section{ Name: text }
+        p.Document.Sections = append(p.Document.Sections, p.currentSection)
+    } 
+    HeaderClose
+    EOL
+
+TextLine <- 
+    !HeaderOpen
+    <(!EOL  .)+> { 
+        fmt.Println("Text=" + text) 
+        if p.currentSection != nil {
+            p.currentSection.Body = p.currentSection.Body + text
+        }
+    } 
+    EOL
+
+EmptyLine <- EOL { 
+    fmt.Println("Empty") 
+}
+
+HeaderOpen <- '['
+HeaderClose <- ']'
+
+SP		<- ' ' / '\t' / EOL
+EOL	<- '\r\n' / '\n' / '\r'
+EOF	<- !.
